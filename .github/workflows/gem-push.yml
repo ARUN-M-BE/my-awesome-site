@@ -1,44 +1,33 @@
-name: Build and Publish
+name: Publish RubyGem
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*' # Trigger on version tags (e.g., v1.0.0)
 
 jobs:
-  build:
-    runs-on: ubuntu-24.04
+  publish:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential libssl-dev zlib1g-dev libreadline-dev libyaml-dev libsqlite3-dev sqlite3 libxml2-dev libxslt1-dev libcurl4-openssl-dev software-properties-common libffi-dev git
-          git clone https://github.com/rbenv/rbenv.git ~/.rbenv
-          echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-          echo 'eval "$(rbenv init -)"' >> ~/.bashrc
-          source ~/.bashrc
-          git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
-          echo 'export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"' >> ~/.bashrc
-          source ~/.bashrc
-
-      - name: Install Ruby
-        run: |
-          rbenv install 2.7.8
-          rbenv global 2.7.8
-          rbenv rehash
-
-      - name: Verify Ruby
-        run: ruby --version
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
 
       - name: Install Bundler
         run: gem install bundler
 
-      - name: Install project dependencies
-        run: bundle install
-
-      - name: Build site
-        run: jekyll build
+      - name: Build and Publish Gem
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_AUTH_TOKEN }}
+        run: |
+          mkdir -p $HOME/.gem
+          touch $HOME/.gem/credentials
+          chmod 0600 $HOME/.gem/credentials
+          printf -- "---\n:rubygems_api_key: ${GEM_HOST_API_KEY}\n" > $HOME/.gem/credentials
+          gem build *.gemspec
+          gem push *.gem
