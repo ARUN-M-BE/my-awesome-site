@@ -12,6 +12,7 @@ Add Missing Gems to the Gemfile: Since the csv and logger libraries are no longe
 
 gem 'csv'
 gem 'logger'
+
 Install the Gems: After updating the Gemfile, run the following command to install the required gems:
 
 bundle install
